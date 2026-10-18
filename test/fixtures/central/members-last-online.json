@@ -1,0 +1,36 @@
+[
+  {
+    "id": "8056c2e21c000001-c0ffee1234",
+    "clock": 1792307400000,
+    "networkId": "8056c2e21c000001",
+    "nodeId": "c0ffee1234",
+    "controllerId": "8056c2e21c",
+    "hidden": false,
+    "name": "Laptop",
+    "description": "",
+    "config": {
+      "activeBridge": false,
+      "authorized": true,
+      "capabilities": [],
+      "creationTime": 1599853509872,
+      "id": "c0ffee1234",
+      "identity": "c0ffee1234:0:00000000000000000000000000000000…",
+      "ipAssignments": ["192.0.2.30"],
+      "lastAuthorizedTime": 1599853637989,
+      "lastDeauthorizedTime": 0,
+      "noAutoAssignIps": false,
+      "revision": 3,
+      "ssoExempt": false,
+      "tags": [],
+      "vMajor": 1,
+      "vMinor": 10,
+      "vRev": 6,
+      "vProto": 12
+    },
+    "physicalAddress": "",
+    "clientVersion": "1.10.6",
+    "protocolVersion": 12,
+    "supportsRulesEngine": true,
+    "lastOnline": 1792307340000
+  }
+]

@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "pending" # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -31,16 +31,19 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        every SDK handler -> the hub (also used by the tests)
+src/hub.js                        reading timer, transitions -> scene events, devices, states, switch, status, deduplicated logs
+src/devices.js                    network device + one device per member: features, names (4 languages), values
+src/zerotier/client.js            Central and self-hosted controller clients, one model, presence rules, errors by kind
+src/zerotier/http.js              node:http/https request (the network seam of the tests)
+src/widgets.js                    dashboard widget `members` (manifest `widgets`)
+src/texts.js                      connection, error, report and command texts (4 languages)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+gladys-assistant-integration.json manifest: name, config_schema, action, triggers, widget...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+                                  and helpers/fakeZeroTier.js (built from test/fixtures/{central,controller})
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +73,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, widget content, feature names, manifest texts, and
+  `docs/en.md`, `docs/fr.md`, `docs/de.md`, `docs/es.md`, kept in sync
+  (`test/i18n.test.js` checks the languages and the doc sections).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -197,6 +202,40 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les filtres de scène ne font qu'égalité et appartenance : un seuil reste le travail d'un capteur.
 - **Les clés de widgets, de déclencheurs et d'actions sont figées une fois publiées.**
 - `gladys_version` `>=5.1.0` dès qu'il y a widgets, déclencheurs ou actions de scène.
+
+## ZeroTier (propre à ce dépôt)
+
+- **Deux modes, un modèle** (`src/zerotier/client.js`) : des réseaux (`id`, `name`) et leurs membres
+  (`nodeId`, `name`, `authorized`, `ips`, `version`, `online`, `lastSeen`). Identités : réseau `network:<nwid>`, membre
+  `member:<nwid>-<nodeId>` (le même nœud dans deux réseaux = deux appareils, l'autorisation est par réseau).
+- **Central** (non testé avec un vrai compte, d'après `spec.json` de zerotier/go-ztcentral) : en-tête
+  `Authorization: token …`, `GET /network`, `GET /network/{id}/member`. **Plus de champ `online`** dans l'API actuelle : `lastSeen` (ms,
+  dernier contact avec le contrôleur ; `lastOnline` sur les réponses anciennes), comparé au `clock` de Central (pas
+  à l'horloge du conteneur) ; en ligne = moins de 5 min. Les membres supprimés restent, `hidden: true` : ignorés.
+  Autoriser : `POST /network/{id}/member/{node}` `{ config: { authorized } }`. Un 429 double l'intervalle (×8 au plus).
+- **Contrôleur auto-hébergé**, vérifié sur **1.14.2** en Docker (`zerotier/zerotier`, 18/10/2026) : `X-ZT1-Auth`,
+  `GET /status` (`address`, `version`, `clock`), `/unstable/controller/network` et
+  `/unstable/controller/network/{id}/member` (`{ data: [...] }`, 1.12+), repli sur `/controller/network/{id}/member`
+  (carte id → révision) puis un GET par membre si 404. Un nœud non contrôleur répond 404 sur `/controller…`.
+  Mauvais jeton : 401 `{}`. Autoriser : `POST /controller/network/{id}/member/{node}` `{ authorized }`. Le membre
+  porte `name` (posé par l'API), `ipAssignments`, `vMajor/vMinor/vRev` (-1 tant qu'il ne s'est pas annoncé).
+- **Le contrôleur ne stocke aucun « vu pour la dernière fois »** : la présence vient de `GET /peer` (rôle `LEAF`).
+  Observé après l'arrêt d'un membre : ses chemins restent `active: true`, `expired: false` ~4 min (seul
+  `lastReceive` vieillit), puis disparaissent (pair « relayé » : `paths: []`, latence -1) jusqu'au retrait du pair
+  ~9 min après l'arrêt. Règle : chemin entendu < 3 min = en ligne ; sans chemin, en ligne seulement si on ne lui a
+  jamais connu de chemin direct (`lastHeard`, en mémoire) ; le nœud contrôleur lui-même (absent de `/peer`) est en
+  ligne. Un membre derrière relais dès le départ reste en ligne jusqu'au retrait du pair (~9 min).
+- L'API locale n'écoute que `127.0.0.1` par défaut : `allowManagementFrom` dans `local.conf` (dossier ZeroTier),
+  redémarrage nécessaire. Gladys appelle depuis son pont Docker.
+- Un **nouveau membre non autorisé** déclenche `member_pending` et pas `member_online` (vu en vrai : un nœud qui
+  frappe est « en ligne » par relais). Aucun événement à la première lecture, ni pour un réseau qui apparaît.
+- « Vu pour la dernière fois », version, IP : `text/text` ; l'IP vaut `Aucune`/`None`… quand il n'y en a pas (un
+  texte n'est jamais vide). Pas d'action de scène : l'interrupteur « Autorisé » (désactivé par défaut) en tient lieu.
+- Test réel reproductible : réseau `gladys-test-zerotier`, conteneurs `zerotier/zerotier` avec
+  `--cap-add NET_ADMIN --device /dev/net/tun` ; `local.conf` `{"settings":{"allowManagementFrom":["0.0.0.0/0"]}}` sur le
+  contrôleur puis redémarrage ; réseau créé par `POST /controller/network/<adresse>______`, `zerotier-cli join` sur
+  l'autre nœud, autorisation par l'API. Le chemin direct entre nœuds n'apparaît qu'après du trafic (ping sur l'IP
+  ZeroTier). Anonymiser les fixtures : `/status` contient l'**IP publique** de l'hôte (`surfaceAddresses`).
 
 ## Store
 

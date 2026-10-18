@@ -30,6 +30,14 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration keeps nothing in `/data`. The ZeroTier token (a Central API
+token, or the `authtoken.secret` of a self-hosted controller) is stored by
+Gladys in the integration configuration; it is sent only to ZeroTier Central
+(`https://api.zerotier.com`) or to the controller address of the
+configuration, and never written to the logs. With the configuration option
+"Allow authorizing members", Gladys can authorize or revoke members of your
+networks: it is off by default.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+ZeroTier, ZeroTier Central and the controllers the integration talks to.

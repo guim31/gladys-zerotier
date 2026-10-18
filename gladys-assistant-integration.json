@@ -1,177 +1,552 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "ZeroTier",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Who is online on your ZeroTier networks, and who is waiting to be authorized.",
+    "fr": "Qui est en ligne sur vos réseaux ZeroTier, et qui attend d'être autorisé.",
+    "de": "Wer in deinen ZeroTier-Netzwerken online ist und wer auf Autorisierung wartet.",
+    "es": "Quién está en línea en sus redes ZeroTier y quién espera ser autorizado."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-zerotier:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-zerotier/main/cover.png",
+  "categories": ["network"],
+  "transports": ["cloud", "local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your ZeroTier networks",
+        "fr": "Vos réseaux ZeroTier",
+        "de": "Deine ZeroTier-Netzwerke",
+        "es": "Sus redes ZeroTier"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "ZeroTier Central (my.zerotier.com): an API token of your account. Self-hosted controller: the address of its node and the content of its authtoken.secret file.",
+        "fr": "ZeroTier Central (my.zerotier.com) : un jeton d'API de votre compte. Contrôleur auto-hébergé : l'adresse de son nœud et le contenu de son fichier authtoken.secret.",
+        "de": "ZeroTier Central (my.zerotier.com): ein API-Token deines Kontos. Selbst gehosteter Controller: die Adresse seines Knotens und der Inhalt seiner Datei authtoken.secret.",
+        "es": "ZeroTier Central (my.zerotier.com): un token de API de su cuenta. Controlador autoalojado: la dirección de su nodo y el contenido de su archivo authtoken.secret."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://docs.zerotier.com/api/tokens/",
+          "label": {
+            "en": "Create an API token",
+            "fr": "Créer un jeton d'API",
+            "de": "API-Token erstellen",
+            "es": "Crear un token de API"
+          }
+        },
+        {
+          "url": "https://docs.zerotier.com/controller/",
+          "label": {
+            "en": "Self-hosted controller",
+            "fr": "Contrôleur auto-hébergé",
+            "de": "Selbst gehosteter Controller",
+            "es": "Controlador autoalojado"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "mode",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Controller",
+        "fr": "Contrôleur",
+        "de": "Controller",
+        "es": "Controlador"
+      },
+      "description": {
+        "en": "Where your networks are managed.",
+        "fr": "Où vos réseaux sont gérés.",
+        "de": "Wo deine Netzwerke verwaltet werden.",
+        "es": "Dónde se gestionan sus redes."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "central",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "central",
+          "label": {
+            "en": "ZeroTier Central (cloud)",
+            "fr": "ZeroTier Central (cloud)",
+            "de": "ZeroTier Central (Cloud)",
+            "es": "ZeroTier Central (nube)"
+          }
+        },
+        {
+          "value": "local",
+          "label": {
+            "en": "Self-hosted controller (local)",
+            "fr": "Contrôleur auto-hébergé (local)",
+            "de": "Selbst gehosteter Controller (lokal)",
+            "es": "Controlador autoalojado (local)"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "token",
+      "type": "secret",
+      "label": {
+        "en": "API token",
+        "fr": "Jeton d'API",
+        "de": "API-Token",
+        "es": "Token de API"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Central: Account → API Access Tokens. Self-hosted: the content of authtoken.secret (/var/lib/zerotier-one on Linux).",
+        "fr": "Central : Account → API Access Tokens. Auto-hébergé : le contenu de authtoken.secret (/var/lib/zerotier-one sous Linux).",
+        "de": "Central: Account → API Access Tokens. Selbst gehostet: der Inhalt von authtoken.secret (/var/lib/zerotier-one unter Linux).",
+        "es": "Central: Account → API Access Tokens. Autoalojado: el contenido de authtoken.secret (/var/lib/zerotier-one en Linux)."
+      },
+      "required": false
+    },
+    {
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Controller address (self-hosted)",
+        "fr": "Adresse du contrôleur (auto-hébergé)",
+        "de": "Adresse des Controllers (selbst gehostet)",
+        "es": "Dirección del controlador (autoalojado)"
+      },
+      "description": {
+        "en": "Only for a self-hosted controller: its IP address, port 9993 by default. Its local.conf must allow the address of Gladys (allowManagementFrom).",
+        "fr": "Seulement pour un contrôleur auto-hébergé : son adresse IP, port 9993 par défaut. Son local.conf doit autoriser l'adresse de Gladys (allowManagementFrom).",
+        "de": "Nur für einen selbst gehosteten Controller: seine IP-Adresse, standardmäßig Port 9993. Seine local.conf muss die Adresse von Gladys erlauben (allowManagementFrom).",
+        "es": "Solo para un controlador autoalojado: su dirección IP, puerto 9993 por defecto. Su local.conf debe permitir la dirección de Gladys (allowManagementFrom)."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.2:9993",
+        "fr": "ex. 192.168.1.2:9993",
+        "de": "z. B. 192.168.1.2:9993",
+        "es": "p. ej. 192.168.1.2:9993"
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": ""
+    },
+    {
+      "key": "networks",
+      "type": "string",
+      "label": {
+        "en": "Networks to follow",
+        "fr": "Réseaux à suivre",
+        "de": "Zu verfolgende Netzwerke",
+        "es": "Redes a seguir"
+      },
+      "description": {
+        "en": "Network IDs (16 characters), separated by commas. Empty: every network the token sees.",
+        "fr": "Identifiants de réseau (16 caractères), séparés par des virgules. Vide : tous les réseaux que le jeton voit.",
+        "de": "Netzwerk-IDs (16 Zeichen), durch Kommas getrennt. Leer: alle Netzwerke, die das Token sieht.",
+        "es": "Identificadores de red (16 caracteres), separados por comas. Vacío: todas las redes que ve el token."
+      },
+      "placeholder": {
+        "en": "e.g. 8056c2e21c000001",
+        "fr": "ex. 8056c2e21c000001",
+        "de": "z. B. 8056c2e21c000001",
+        "es": "p. ej. 8056c2e21c000001"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often ZeroTier is read: one request per network, plus one. A member counts as offline a few minutes after it stops.",
+        "fr": "Fréquence de lecture de ZeroTier : une requête par réseau, plus une. Un membre passe hors ligne quelques minutes après son arrêt.",
+        "de": "Wie oft ZeroTier abgefragt wird: eine Anfrage pro Netzwerk, plus eine. Ein Mitglied gilt einige Minuten nach dem Stopp als offline.",
+        "es": "Frecuencia de lectura de ZeroTier: una solicitud por red, más una. Un miembro pasa a fuera de línea unos minutos después de detenerse."
+      },
+      "required": false,
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 s",
+            "fr": "30 s",
+            "de": "30 s",
+            "es": "30 s"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 min",
+            "fr": "1 min",
+            "de": "1 min",
+            "es": "1 min"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 min",
+            "fr": "2 min",
+            "de": "2 min",
+            "es": "2 min"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 min",
+            "fr": "5 min",
+            "de": "5 min",
+            "es": "5 min"
+          }
+        }
+      ]
+    },
+    {
+      "key": "allow_authorize",
+      "type": "boolean",
+      "label": {
+        "en": "Allow authorizing members",
+        "fr": "Autoriser l'autorisation des membres",
+        "de": "Autorisieren von Mitgliedern erlauben",
+        "es": "Permitir autorizar miembros"
+      },
+      "description": {
+        "en": "Off: the \"Authorized\" switch is read only. On: Gladys, its scenes and voice assistants can let a member in or cut it off.",
+        "fr": "Désactivé : l'interrupteur « Autorisé » est en lecture seule. Activé : Gladys, ses scènes et les assistants vocaux peuvent faire entrer un membre ou le couper.",
+        "de": "Aus: Der Schalter „Autorisiert“ ist schreibgeschützt. An: Gladys, ihre Szenen und Sprachassistenten können ein Mitglied zulassen oder aussperren.",
+        "es": "Desactivado: el interruptor «Autorizado» es de solo lectura. Activado: Gladys, sus escenas y los asistentes de voz pueden admitir o cortar a un miembro."
+      },
+      "required": false,
+      "default": false
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Language of the feature names and of the dates, set when a device is added.",
+        "fr": "Langue des noms de fonctionnalités et des dates, fixée à l'ajout d'un appareil.",
+        "de": "Sprache der Funktionsnamen und der Daten, beim Hinzufügen eines Geräts festgelegt.",
+        "es": "Idioma de los nombres de las funciones y de las fechas, fijado al añadir un dispositivo."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Reads ZeroTier now and shows each network with its members.",
+        "fr": "Lit ZeroTier maintenant et affiche chaque réseau avec ses membres.",
+        "de": "Liest ZeroTier jetzt und zeigt jedes Netzwerk mit seinen Mitgliedern.",
+        "es": "Lee ZeroTier ahora y muestra cada red con sus miembros."
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "member_online",
+      "label": {
+        "en": "ZeroTier member online",
+        "fr": "Membre ZeroTier en ligne",
+        "de": "ZeroTier-Mitglied online",
+        "es": "Miembro ZeroTier en línea"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A member of a ZeroTier network came online.",
+        "fr": "Un membre d'un réseau ZeroTier est passé en ligne.",
+        "de": "Ein Mitglied eines ZeroTier-Netzwerks ist online gegangen.",
+        "es": "Un miembro de una red ZeroTier se ha conectado."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Member (empty: any)",
+            "fr": "Membre (vide : n'importe lequel)",
+            "de": "Mitglied (leer: beliebig)",
+            "es": "Miembro (vacío: cualquiera)"
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "network_device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Network (empty: any)",
+            "fr": "Réseau (vide : n'importe lequel)",
+            "de": "Netzwerk (leer: beliebig)",
+            "es": "Red (vacío: cualquiera)"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "member",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Member name",
+            "fr": "Nom du membre",
+            "de": "Name des Mitglieds",
+            "es": "Nombre del miembro"
+          }
+        },
+        {
+          "key": "node_id",
+          "type": "string",
+          "label": {
+            "en": "Node ID",
+            "fr": "Identifiant du nœud",
+            "de": "Knoten-ID",
+            "es": "ID del nodo"
+          }
+        },
+        {
+          "key": "network",
+          "type": "string",
+          "label": {
+            "en": "Network name",
+            "fr": "Nom du réseau",
+            "de": "Name des Netzwerks",
+            "es": "Nombre de la red"
+          }
         }
       ]
-    }
-  ],
-  "scene_actions": [
+    },
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "member_offline",
+      "label": {
+        "en": "ZeroTier member offline",
+        "fr": "Membre ZeroTier hors ligne",
+        "de": "ZeroTier-Mitglied offline",
+        "es": "Miembro ZeroTier fuera de línea"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "A member of a ZeroTier network has not been seen for a few minutes.",
+        "fr": "Un membre d'un réseau ZeroTier n'a plus été vu depuis quelques minutes.",
+        "de": "Ein Mitglied eines ZeroTier-Netzwerks wurde seit einigen Minuten nicht mehr gesehen.",
+        "es": "Un miembro de una red ZeroTier lleva unos minutos sin verse."
+      },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "label": {
+            "en": "Member (empty: any)",
+            "fr": "Membre (vide : n'importe lequel)",
+            "de": "Mitglied (leer: beliebig)",
+            "es": "Miembro (vacío: cualquiera)"
+          }
+        },
+        {
+          "key": "network_device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Network (empty: any)",
+            "fr": "Réseau (vide : n'importe lequel)",
+            "de": "Netzwerk (leer: beliebig)",
+            "es": "Red (vacío: cualquiera)"
+          }
         }
       ],
-      "outputs": [
+      "variables": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "member",
+          "type": "string",
+          "label": {
+            "en": "Member name",
+            "fr": "Nom du membre",
+            "de": "Name des Mitglieds",
+            "es": "Nombre del miembro"
+          }
+        },
+        {
+          "key": "node_id",
+          "type": "string",
+          "label": {
+            "en": "Node ID",
+            "fr": "Identifiant du nœud",
+            "de": "Knoten-ID",
+            "es": "ID del nodo"
+          }
+        },
+        {
+          "key": "network",
+          "type": "string",
+          "label": {
+            "en": "Network name",
+            "fr": "Nom du réseau",
+            "de": "Name des Netzwerks",
+            "es": "Nombre de la red"
+          }
+        }
+      ]
+    },
+    {
+      "key": "member_pending",
+      "label": {
+        "en": "New member awaiting authorization",
+        "fr": "Nouveau membre en attente d'autorisation",
+        "de": "Neues Mitglied wartet auf Autorisierung",
+        "es": "Nuevo miembro pendiente de autorización"
+      },
+      "description": {
+        "en": "A new device asked to join a private ZeroTier network.",
+        "fr": "Un nouvel appareil a demandé à rejoindre un réseau ZeroTier privé.",
+        "de": "Ein neues Gerät möchte einem privaten ZeroTier-Netzwerk beitreten.",
+        "es": "Un nuevo dispositivo ha pedido unirse a una red ZeroTier privada."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Member (empty: any)",
+            "fr": "Membre (vide : n'importe lequel)",
+            "de": "Mitglied (leer: beliebig)",
+            "es": "Miembro (vacío: cualquiera)"
+          }
+        },
+        {
+          "key": "network_device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Network (empty: any)",
+            "fr": "Réseau (vide : n'importe lequel)",
+            "de": "Netzwerk (leer: beliebig)",
+            "es": "Red (vacío: cualquiera)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "member",
+          "type": "string",
+          "label": {
+            "en": "Member name",
+            "fr": "Nom du membre",
+            "de": "Name des Mitglieds",
+            "es": "Nombre del miembro"
+          }
+        },
+        {
+          "key": "node_id",
+          "type": "string",
+          "label": {
+            "en": "Node ID",
+            "fr": "Identifiant du nœud",
+            "de": "Knoten-ID",
+            "es": "ID del nodo"
+          }
+        },
+        {
+          "key": "network",
+          "type": "string",
+          "label": {
+            "en": "Network name",
+            "fr": "Nom du réseau",
+            "de": "Name des Netzwerks",
+            "es": "Nombre de la red"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "members",
+      "label": {
+        "en": "ZeroTier members",
+        "fr": "Membres ZeroTier",
+        "de": "ZeroTier-Mitglieder",
+        "es": "Miembros ZeroTier"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Who is online on ZeroTier, and who awaits authorization.",
+        "fr": "Qui est en ligne sur ZeroTier, et qui attend une autorisation.",
+        "de": "Wer bei ZeroTier online ist und wer auf Autorisierung wartet.",
+        "es": "Quién está en línea en ZeroTier y quién espera autorización."
+      },
+      "icon": "globe",
+      "settings": [
+        {
+          "key": "network_device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Network (empty: all)",
+            "fr": "Réseau (vide : tous)",
+            "de": "Netzwerk (leer: alle)",
+            "es": "Red (vacío: todas)"
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,61 +1,162 @@
-# Demo Devices Template
+# ZeroTier
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow the members of your [ZeroTier](https://www.zerotier.com) networks in
+Gladys: one device per member (online or not, authorized or not, last seen,
+managed IP address, ZeroTier version), one device per network, a dashboard
+widget, and scene triggers when a member comes online, goes offline, or asks to
+join — for instance to know that a phone is back on the family network, or
+that an unknown device is knocking at the door of a private network.
 
-## What you get
+It works with **ZeroTier Central** (my.zerotier.com, the cloud) or with a
+**self-hosted controller** (your own ZeroTier node managing its networks).
+The self-hosted mode was tested against a real ZeroTier 1.14.2 controller and
+member in Docker. The Central mode was developed from the official API
+documentation, **without a real Central account: feedback welcome** on the
+[Gladys forum](https://community.gladysassistant.com) or in the
+[issues](https://github.com/guim31/gladys-zerotier/issues).
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## What you need
 
-## Configuration
+- Gladys Assistant 5.1.0 or later.
+- **ZeroTier Central**: an API token of the account that owns the networks
+  (my.zerotier.com → Account → API Access Tokens), and Internet access for
+  Gladys.
+- **Self-hosted controller**: the ZeroTier node that runs the controller,
+  reachable from Gladys on its port 9993, the content of its `authtoken.secret`
+  file, and the address of Gladys allowed in its `local.conf` (see below).
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+## Set up
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+1. In Gladys, install the integration, then open its **Configuration** screen.
+2. **Controller**: _ZeroTier Central (cloud)_ or _Self-hosted controller
+   (local)_.
+3. **API token**: the Central token, or the content of `authtoken.secret`.
+4. **Networks to follow**: the network IDs (16 characters, as shown by Central
+   or `zerotier-cli listnetworks`), separated by commas. Empty: every network
+   the token sees.
+5. **Refresh interval**: 1 minute by default. Each reading costs one request,
+   plus one per network.
+6. **Allow authorizing members**: off by default (see the devices below).
+7. **Language of the names**: the language of the feature names and of the
+   dates, French by default.
+8. Save, then press **Test the connection**: each network is listed with its
+   members. The devices then appear in the **Discovery** tab of the
+   integration: add the ones you want.
 
-## Actions
+### ZeroTier Central
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+Create a token in my.zerotier.com → **Account** → **API Access Tokens**. It
+gives access to every network of the account: keep it private. Central limits
+the number of API requests per account: keep the default interval if other
+tools use the same token.
 
-## Scenes
+### Self-hosted controller
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+The local API of ZeroTier only answers the node itself by default. Allow the
+address Gladys calls from in the `local.conf` file of the controller's
+ZeroTier folder (`/var/lib/zerotier-one` on Linux), then restart ZeroTier:
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+```json
+{ "settings": { "allowManagementFrom": ["192.168.1.0/24"] } }
+```
+
+Gladys calls from its host (the integration runs in a Docker container on
+the default bridge): allow the address of the Gladys machine, or, when the
+controller runs on the same machine, the Docker range (`172.16.0.0/12`). As
+**Controller address (self-hosted)**, give the address of the machine of the
+controller on your local network, never `127.0.0.1`.
+
+## The devices
+
+**Each network** (`ZeroTier` followed by its name):
+
+| Feature                | What it shows                                     |
+| ---------------------- | ------------------------------------------------- |
+| Online members         | Members online right now                          |
+| Members                | Members of the network                            |
+| Awaiting authorization | Members that asked to join and are not let in yet |
+
+**Each member** (its name, or its node ID when it has none, followed by
+`(ZeroTier)`):
+
+| Feature            | What it shows                                                                    |
+| ------------------ | -------------------------------------------------------------------------------- |
+| Online             | Yes when the member was seen a few minutes ago at most                           |
+| Authorized         | Whether the member is authorized on the network (a switch, read only by default) |
+| Last seen          | Date and time the member was last seen                                           |
+| Managed IP address | The addresses the network gives it (`None` when it has none)                     |
+| ZeroTier version   | The version of ZeroTier the member runs                                          |
+
+The same machine in two networks is two devices: its authorization is per
+network.
+
+**Online** is read differently in each mode. With Central, a member is online
+when it checked in with Central less than 5 minutes ago (members check in
+about every minute). With a self-hosted controller, the controller does not
+store such a date: the integration reads the node's peers, and a member is
+online when the controller heard from it less than 3 minutes ago. A member
+reached through a relay (no direct path) counts as online as long as the
+node lists it.
+
+**Authorized** only becomes a command when **Allow authorizing members** is
+on: then Gladys, its scenes and voice assistants can let a member in or cut it
+off. Turning the option on or off changes the device: press **Update** in the
+Discovery tab.
 
 ## Dashboard
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+The **ZeroTier members** widget shows the online members and the members of
+the networks, then one row per member: the ones awaiting authorization first,
+then the online ones, then the others with the time they were last seen. Its
+**Network (empty: all)** setting shows a single network.
+
+## Scenes
+
+### Triggers
+
+- **ZeroTier member online**: a member came online.
+- **ZeroTier member offline**: a member has not been seen for a few minutes.
+- **New member awaiting authorization**: a new device asked to join a private
+  network.
+
+Each trigger can be limited to one member (**Member (empty: any)**) or one
+network (**Network (empty: any)**), and gives the variables **Member name**,
+**Node ID** and **Network name** to the scene's messages. No event is sent at
+the first reading after a start or a change of configuration: the previous
+state is unknown.
+
+### Scene ideas
+
+- When a new member awaits authorization, send yourself a message with its
+  **Node ID** and the **Network name**, then authorize it in Central or
+  from its device in Gladys.
+- When the laptop of a teenager comes online after 11 pm, send a notification.
+- When the remote NAS that keeps your backups goes offline, send a message.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"API token refused"**: check the token. For a self-hosted controller, it
+  is the whole content of `authtoken.secret`, without a new line.
+- **"ZeroTier does not answer"**: with Central, check the Internet access of
+  Gladys. With a self-hosted controller, check the address and the port
+  (9993), and that `allowManagementFrom` allows Gladys (see above).
+- **"network not found"**: the network ID is wrong, or the token does not see
+  that network.
+- **"this ZeroTier node is not a network controller"**: the address is the one
+  of an ordinary ZeroTier node, not of the controller of your networks.
+- **"too many requests to ZeroTier Central"**: the integration already waits
+  longer between readings; choose a longer interval.
+- **A member stays online after being switched off**: it takes up to 5
+  minutes, plus one reading, and up to about 9 minutes for a relayed member of a
+  self-hosted controller.
+
+## Limits
+
+- One controller (or one Central account) per installation of the
+  integration.
+- The integration does not create networks, nor rename or delete members:
+  that stays in Central or on your controller.
+- The last seen date of a self-hosted controller is kept in memory: it is
+  unknown again after a restart of the integration, until the member is seen.
+- Central members that were deleted (hidden by Central) are not shown.
+- Not affiliated with ZeroTier, Inc. ZeroTier is a trademark of ZeroTier, Inc.
