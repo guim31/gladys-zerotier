@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-18
+
 ### Added
 
 - The members of your ZeroTier networks in Gladys, from ZeroTier Central (an
@@ -29,4 +31,5 @@ the notes of the version's GitHub Release.
 - Feature names, messages, widget and documentation in English, French, German
   and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-zerotier/commits/main
+[Unreleased]: https://github.com/guim31/gladys-zerotier/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-zerotier/releases/tag/v1.0.0
