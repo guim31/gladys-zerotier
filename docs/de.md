@@ -91,7 +91,7 @@ gefolgt von `(ZeroTier)`):
 | --------------------- | ------------------------------------------------------------------------------------------ |
 | Online                | Ja, wenn das Mitglied höchstens vor ein paar Minuten gesehen wurde                         |
 | Autorisiert           | Ob das Mitglied im Netzwerk autorisiert ist (ein Schalter, standardmäßig schreibgeschützt) |
-| Zuletzt gesehen       | Datum und Uhrzeit, zu der das Mitglied zuletzt gesehen wurde                               |
+| Zuletzt gesehen       | Wann es offline ging; online, seit wann es online ist                                      |
 | Verwaltete IP-Adresse | Die Adressen, die das Netzwerk ihm gibt (`Keine`, wenn es keine hat)                       |
 | ZeroTier-Version      | Die ZeroTier-Version des Mitglieds                                                         |
 
@@ -104,7 +104,9 @@ online, wenn es sich vor weniger als 5 Minuten bei Central gemeldet hat
 Controller speichert der Controller dieses Datum nicht: Die Integration liest
 die Peers des Knotens, und ein Mitglied ist online, wenn der Controller es vor
 weniger als 3 Minuten gehört hat. Ein Mitglied, das über ein Relay erreicht
-wird (ohne direkten Pfad), gilt als online, solange der Knoten es auflistet.
+wird (ohne direkten Pfad), gilt als online, sobald der Knoten es seit 2 Minuten auflistet;
+eines, das von einem direkten Pfad zu einem Relay wechselt, gilt etwa 12
+Minuten lang als offline.
 
 **Autorisiert** wird nur zu einem Befehl, wenn **Autorisieren von Mitgliedern
 erlauben** aktiviert ist: Dann können Gladys, ihre Szenen und Sprachassistenten
@@ -134,7 +136,9 @@ oder ein Netzwerk (**Netzwerk (leer: beliebig)**) beschränken und gibt die
 Variablen **Name des Mitglieds**, **Knoten-ID** und **Name des Netzwerks** an
 die Nachrichten der Szene weiter. Bei der ersten Abfrage nach einem Start oder
 einer Änderung der Konfiguration wird kein Ereignis gesendet: Der vorherige
-Zustand ist unbekannt.
+Zustand ist unbekannt. Online und offline betreffen nur autorisierte Mitglieder: Ein Unbekannter,
+der kommt und geht, löst nichts aus, und das Autorisieren eines verbundenen
+Mitglieds löst **ZeroTier-Mitglied online** aus.
 
 ### Szenen-Ideen
 

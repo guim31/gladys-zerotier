@@ -89,7 +89,7 @@ de `(ZeroTier)`) :
 | ------------------------ | -------------------------------------------------------------------------------------- |
 | En ligne                 | Oui quand le membre a été vu il y a quelques minutes au plus                           |
 | Autorisé                 | Si le membre est autorisé sur le réseau (un interrupteur, en lecture seule par défaut) |
-| Vu pour la dernière fois | La date et l'heure où le membre a été vu pour la dernière fois                         |
+| Vu pour la dernière fois | Quand il est passé hors ligne ; en ligne, depuis quand il l'est                        |
 | Adresse IP gérée         | Les adresses que le réseau lui donne (`Aucune` s'il n'en a pas)                        |
 | Version de ZeroTier      | La version de ZeroTier du membre                                                       |
 
@@ -102,7 +102,8 @@ se signalent environ chaque minute). Avec un contrôleur auto-hébergé, le
 contrôleur ne garde pas cette date : l'intégration lit les pairs du nœud, et
 un membre est en ligne quand le contrôleur l'a entendu il y a moins de 3
 minutes. Un membre joint par un relais (sans chemin direct) compte comme en
-ligne tant que le nœud le liste.
+ligne une fois listé par le nœud depuis 2 minutes ; un membre qui passe d'un chemin direct à un
+relais est vu hors ligne une douzaine de minutes.
 
 **Autorisé** ne devient une commande que si **Autoriser l'autorisation des
 membres** est activé : Gladys, ses scènes et les assistants vocaux peuvent
@@ -130,7 +131,9 @@ Chaque déclencheur peut se limiter à un membre (**Membre (vide : n'importe
 lequel)**) ou à un réseau (**Réseau (vide : n'importe lequel)**), et donne les
 variables **Nom du membre**, **Identifiant du nœud** et **Nom du réseau** aux
 messages de la scène. Aucun événement n'est envoyé à la première lecture après
-un démarrage ou un changement de configuration : l'état précédent est inconnu.
+un démarrage ou un changement de configuration : l'état précédent est inconnu. En ligne et hors ligne ne concernent que les membres autorisés : un inconnu
+qui va et vient ne déclenche rien, et autoriser un membre connecté déclenche
+**Membre ZeroTier en ligne**.
 
 ### Idées de scènes
 

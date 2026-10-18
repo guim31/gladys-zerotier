@@ -257,3 +257,77 @@ test('the container reads ZeroTier on its own timer, without Gladys polling', as
     true,
   );
 });
+
+test('fixing the network ids of the configuration starts reading', async (t) => {
+  const w = await createWorld({
+    config: { ...CENTRAL_CONFIG, networks: '8056c2e21c000001, bogus' },
+  });
+  t.after(() => w.app.stop());
+  assert.equal(w.fake.connectionStatus.connected, false);
+  await w.fake.configUpdated({ ...CENTRAL_CONFIG, networks: '8056c2e21c000001' });
+  assert.equal(w.fake.connectionStatus.connected, true);
+  assert.equal(w.fake.discoveredDevices.length, 5);
+});
+
+test('an unauthorized node coming and going fires nothing; being authorized online is "online"', async (t) => {
+  const w = await createWorld({ config: { ...CENTRAL_CONFIG, allow_authorize: true } });
+  t.after(() => w.app.stop());
+  const stranger = w.central.members.find((m) => m.nodeId === 'b1b2b3b4b5');
+  stranger.lastSeen = w.clock.now() - 3_600_000;
+  await w.hub.poll();
+  stranger.lastSeen = w.clock.now();
+  await w.hub.poll();
+  assert.deepEqual(w.fake.sceneEvents, []);
+  stranger.config.authorized = true;
+  await w.hub.poll();
+  assert.deepEqual(
+    events(w, TRIGGERS.ONLINE).map((event) => event.data.node_id),
+    ['b1b2b3b4b5'],
+  );
+});
+
+test('"Last seen" does not change at each check-in of an online member', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  const lastSeen = memberIdsOf(w.gladys, 'c0ffee1234').feature(FEATURE_KEYS.LAST_SEEN);
+  const first = w.fake.lastState(lastSeen);
+  for (let i = 0; i < 3; i += 1) {
+    w.clock.advance(60_000);
+    w.central.setOnline('Laptop', true);
+    await w.hub.poll();
+  }
+  assert.equal(w.fake.lastState(lastSeen), first);
+  w.clock.advance(60_000);
+  w.central.find('Laptop').lastSeen = w.clock.now() - 10 * 60_000;
+  await w.hub.poll();
+  assert.notEqual(w.fake.lastState(lastSeen), first, 'the real last time, once offline');
+});
+
+test('a refused heartbeat is not retried at every reading', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  w.clock.advance(12 * 3_600_000 + 1);
+  const publish = w.gladys.publishStates.bind(w.gladys);
+  w.gladys.publishStates = async () => {
+    throw new Error('HTTP 429');
+  };
+  w.central.members.forEach((member) => {
+    member.lastSeen = 0;
+  });
+  await w.hub.poll();
+  w.gladys.publishStates = publish;
+  const before = w.fake.states.length;
+  await w.hub.poll();
+  assert.ok(w.fake.states.length - before < 15, 'only the values refused, not a new heartbeat');
+});
+
+test('members of a network no longer followed are shown offline', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  // Read by Central only (the controller has the laptop too, still online there).
+  const online = memberIdsOf(w.gladys, 'b1b2b3b4b5').feature(FEATURE_KEYS.ONLINE);
+  assert.equal(w.fake.lastState(online), 1);
+  await w.fake.configUpdated({ ...LOCAL_CONFIG });
+  assert.equal(w.fake.lastState(online), 0);
+  assert.deepEqual(w.fake.sceneEvents, []);
+});

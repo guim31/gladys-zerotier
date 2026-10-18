@@ -121,12 +121,22 @@ export class ZeroTierHub {
   async reconfigure(config) {
     const previous = this.config;
     this.config = config;
-    const signature = JSON.stringify([config.mode, config.token, config.url, config.networks]);
-    if (signature !== this.signature || config.invalidNetworks.length > 0) {
+    const signature = JSON.stringify([
+      config.mode,
+      config.token,
+      config.url,
+      config.networks,
+      config.invalidNetworks,
+    ]);
+    if (signature !== this.signature) {
       // Another API, token or set of networks: start over, without scene
-      // events for what the first reading finds.
+      // events for what the first reading finds. The members read so far
+      // may not be read again: they are shown offline (no event).
       this.signature = signature;
       this.client = config.invalidNetworks.length > 0 ? null : createClient(config, this.request);
+      await this.forget(
+        this.networks.flatMap((network) => network.members.map((member) => ({ network, member }))),
+      );
       this.networks = [];
       this.read = false;
       this.error = null;
@@ -254,6 +264,10 @@ export class ZeroTierHub {
         const prev = oldMembers.get(member.nodeId);
         // The controller forgets a peer that stopped: keep the last time seen.
         member.lastSeen ??= prev?.lastSeen ?? null;
+        // "Last seen" changes only at a transition: while online, it stays the
+        // time the member came online (one state per member and minute else).
+        member.shownSeen =
+          member.online && prev?.online ? (prev.shownSeen ?? member.lastSeen) : member.lastSeen;
         widgetChanged ||=
           !prev ||
           prev.online !== member.online ||
@@ -269,8 +283,12 @@ export class ZeroTierHub {
           events.push([TRIGGERS.PENDING, network, member]);
           continue;
         }
-        if ((prev?.online ?? false) !== member.online) {
-          events.push([member.online ? TRIGGERS.ONLINE : TRIGGERS.OFFLINE, network, member]);
+        // Presence is that of the members let in: an unauthorized node coming
+        // and going is no one's presence; being authorized while connected is
+        // coming online.
+        const present = member.online && member.authorized;
+        if ((prev ? prev.online && prev.authorized : false) !== present) {
+          events.push([present ? TRIGGERS.ONLINE : TRIGGERS.OFFLINE, network, member]);
         }
       }
       for (const member of old?.members ?? []) {
@@ -279,19 +297,20 @@ export class ZeroTierHub {
         }
       }
     }
-    for (const network of this.networks) {
-      if (!networks.some((candidate) => candidate.id === network.id)) {
-        widgetChanged = true;
-        for (const member of network.members) {
-          gone.push({ network, member });
-        }
+    const goneNetworks = this.networks.filter(
+      (network) => !networks.some((candidate) => candidate.id === network.id),
+    );
+    for (const network of goneNetworks) {
+      widgetChanged = true;
+      for (const member of network.members) {
+        gone.push({ network, member });
       }
     }
     widgetChanged ||= gone.length > 0;
     this.networks = networks;
     this.read = true;
 
-    await this.forget(gone);
+    await this.forget(gone, goneNetworks);
     await this.publishDevices();
     await this.publishStates();
     await this.publishTransports(true);
@@ -329,9 +348,19 @@ export class ZeroTierHub {
     this.gladys.requestWidgetRefresh(WIDGET_KEY);
   }
 
-  /** Members gone from the API: their devices stay in Gladys, shown offline. */
-  async forget(entries) {
+  /**
+   * Members (and networks) gone from the API: their devices stay in Gladys,
+   * shown offline, a network with no member online nor pending.
+   */
+  async forget(entries, networks = []) {
     const states = [];
+    for (const network of networks) {
+      const ids = networkIds(this.gladys, network.id);
+      for (const key of [FEATURE_KEYS.ONLINE_MEMBERS, FEATURE_KEYS.PENDING]) {
+        this.published.delete(ids.feature(key));
+        states.push({ device_feature_external_id: ids.feature(key), state: 0 });
+      }
+    }
     for (const { network, member } of entries) {
       logger.debug(`Member ${member.name} left network ${network.name}`);
       const ids = memberIds(this.gladys, network.id, member.nodeId);
@@ -430,7 +459,6 @@ export class ZeroTierHub {
           : { device_feature_external_id: externalId, state: value },
       );
     }
-    let failed = false;
     for (let at = 0; at < states.length; at += MAX_STATES_PER_REQUEST) {
       const batch = states.slice(at, at + MAX_STATES_PER_REQUEST);
       try {
@@ -440,11 +468,12 @@ export class ZeroTierHub {
         }
         this.resolved('states');
       } catch (err) {
-        failed = true;
+        // Refused values are not in `published`: they go again as changes.
         this.problem('states', `States refused: ${err.message}`);
       }
     }
-    if (heartbeat && !failed) {
+    if (heartbeat) {
+      // Even after a refusal: a heartbeat at every reading would flood Gladys.
       this.heartbeatAt = now;
     }
   }

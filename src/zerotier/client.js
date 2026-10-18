@@ -26,7 +26,12 @@
 // relayed one (no path, latency -1) until the node drops it, about 9 minutes
 // after the stop. So a peer without path is online only if it never had a
 // path to remember (a relayed member): the client keeps the last time each
-// member was heard. The controller node itself is never one of its peers: it
+// listed member was heard on a direct path. A peer still listed without path
+// long after that (beyond the ~9 minutes a stopped one stays) is alive behind
+// a relay: online again. Seen too: authorizing or revoking a stopped member
+// makes the controller look for it, which lists a pathless peer for a few
+// seconds; so a pathless peer counts as relayed only once listed for 2
+// minutes in a row. The controller node itself is never one of its peers: it
 // is online since it answers.
 // -----------------------------------------------------------------------------
 
@@ -49,6 +54,11 @@ export const ERROR_KINDS = Object.freeze({
 export const CENTRAL_ONLINE_WITHIN_MS = 5 * 60_000;
 // Local: a direct path heard within this means online (pings every 60 s).
 export const PEER_ONLINE_WITHIN_MS = 3 * 60_000;
+// Local: a stopped member is dropped by the node about 9 minutes after its
+// last packet; listed without path beyond this, it is relayed, hence alive.
+export const PEER_RELAYED_AFTER_MS = 12 * 60_000;
+// Local: a pathless peer must be listed this long before it counts as relayed.
+export const PEER_RELAY_CONFIRM_MS = 2 * 60_000;
 
 export class ZeroTierError extends Error {
   /**
@@ -235,6 +245,8 @@ export class ControllerClient extends BaseClient {
     this.version = null;
     /** Last `lastReceive` of a direct path, per node id. */
     this.lastHeard = new Map();
+    /** Since when a peer is listed without any path, per node id. */
+    this.pathless = new Map();
   }
 
   headers() {
@@ -247,7 +259,7 @@ export class ControllerClient extends BaseClient {
    * @param {number} clock the node's clock
    * @param {number|null} heard the last time a direct path was heard, if any
    */
-  static presence(peer, clock, heard = null) {
+  static presence(peer, clock, heard = null, pathlessSince = null) {
     if (!peer) {
       return { online: false, lastSeen: heard };
     }
@@ -257,16 +269,20 @@ export class ControllerClient extends BaseClient {
       const lastSeen = Math.max(...times);
       return { online: clock - lastSeen < PEER_ONLINE_WITHIN_MS, lastSeen };
     }
-    if (heard !== null) {
-      // Its direct paths expired: a member that stopped, still listed.
+    // No direct path: a member that stopped (still listed for a while after
+    // its paths expired), a stub the controller made while looking for it,
+    // or a member behind a relay (listed for good).
+    if (heard !== null && clock - heard < PEER_RELAYED_AFTER_MS) {
       return { online: clock - heard < PEER_ONLINE_WITHIN_MS, lastSeen: heard };
     }
-    // Relayed: no path to read, but the node still hears from it.
-    return { online: true, lastSeen: clock };
+    if (pathlessSince !== null && clock - pathlessSince >= PEER_RELAY_CONFIRM_MS) {
+      return { online: true, lastSeen: clock };
+    }
+    return { online: false, lastSeen: heard };
   }
 
   /** @param {object} raw a controller member; `peers` by address */
-  static parseMember(raw, { peers, self, clock, lastHeard = new Map() }) {
+  static parseMember(raw, { peers, self, clock, lastHeard = new Map(), pathless = new Map() }) {
     const nodeId = text(raw?.address) ?? text(raw?.id);
     if (!nodeId || !NODE_ID.test(nodeId)) {
       return null;
@@ -275,7 +291,12 @@ export class ControllerClient extends BaseClient {
     const { online, lastSeen } =
       nodeId === self
         ? { online: true, lastSeen: clock }
-        : ControllerClient.presence(peer, clock, lastHeard.get(nodeId) ?? null);
+        : ControllerClient.presence(
+            peer,
+            clock,
+            lastHeard.get(nodeId) ?? null,
+            pathless.get(nodeId) ?? null,
+          );
     return {
       nodeId,
       name: text(raw.name) ?? nodeId,
@@ -311,8 +332,15 @@ export class ControllerClient extends BaseClient {
     }
     const networks = [];
     for (const id of ids.filter((value) => NETWORK_ID.test(value))) {
-      const network = await this.call(`${this.base}/controller/network/${id}`, { network: id });
-      networks.push({ id, name: text(network?.name) });
+      try {
+        const network = await this.call(`${this.base}/controller/network/${id}`, { network: id });
+        networks.push({ id, name: text(network?.name) });
+      } catch (err) {
+        // Deleted between the listing and this request: not "no controller".
+        if (err.kind !== ERROR_KINDS.NOT_FOUND) {
+          throw err;
+        }
+      }
     }
     return networks;
   }
@@ -327,9 +355,18 @@ export class ControllerClient extends BaseClient {
     const map = await this.call(`${this.base}/controller/network/${id}/member`, { network: id });
     const members = [];
     for (const nodeId of Object.keys(map ?? {}).filter((key) => NODE_ID.test(key))) {
-      members.push(
-        await this.call(`${this.base}/controller/network/${id}/member/${nodeId}`, { network: id }),
-      );
+      try {
+        members.push(
+          await this.call(`${this.base}/controller/network/${id}/member/${nodeId}`, {
+            network: id,
+          }),
+        );
+      } catch (err) {
+        // Deleted between the listing and this request.
+        if (err.kind !== ERROR_KINDS.NOT_FOUND) {
+          throw err;
+        }
+      }
     }
     return members;
   }
@@ -357,12 +394,24 @@ export class ControllerClient extends BaseClient {
         .filter((peer) => peer?.role === 'LEAF' && typeof peer.address === 'string')
         .map((peer) => [peer.address, peer]),
     );
+    // A peer the node dropped starts over: if it comes back relayed, it has
+    // no direct path to be judged by.
+    for (const map of [this.lastHeard, this.pathless]) {
+      for (const address of [...map.keys()]) {
+        if (!peers.has(address)) {
+          map.delete(address);
+        }
+      }
+    }
     for (const [address, peer] of peers) {
       const times = (Array.isArray(peer.paths) ? peer.paths : [])
         .map((path) => toTime(path?.lastReceive))
         .filter((time) => time !== null);
       if (times.length > 0) {
         this.lastHeard.set(address, Math.max(...times));
+        this.pathless.delete(address);
+      } else if (!this.pathless.has(address)) {
+        this.pathless.set(address, clock);
       }
     }
     const result = [];
@@ -373,7 +422,13 @@ export class ControllerClient extends BaseClient {
         name: names.get(id),
         members: members
           .map((raw) =>
-            ControllerClient.parseMember(raw, { peers, self, clock, lastHeard: this.lastHeard }),
+            ControllerClient.parseMember(raw, {
+              peers,
+              self,
+              clock,
+              lastHeard: this.lastHeard,
+              pathless: this.pathless,
+            }),
           )
           .filter(Boolean)
           .sort(byName),

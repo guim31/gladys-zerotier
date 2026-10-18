@@ -224,11 +224,20 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   `lastReceive` vieillit), puis disparaissent (pair « relayé » : `paths: []`, latence -1) jusqu'au retrait du pair
   ~9 min après l'arrêt. Règle : chemin entendu < 3 min = en ligne ; sans chemin, en ligne seulement si on ne lui a
   jamais connu de chemin direct (`lastHeard`, en mémoire) ; le nœud contrôleur lui-même (absent de `/peer`) est en
-  ligne. Un membre derrière relais dès le départ reste en ligne jusqu'au retrait du pair (~9 min).
+  ligne. Un pair sans chemin ne compte comme relayé (en ligne) qu'après 2 min de présence continue : vu en vrai,
+  autoriser ou révoquer un membre arrêté fait apparaître quelques secondes un pair sans chemin (le contrôleur le
+  cherche). Un membre relayé reste en ligne jusqu'au retrait du pair (~9 min).
 - L'API locale n'écoute que `127.0.0.1` par défaut : `allowManagementFrom` dans `local.conf` (dossier ZeroTier),
   redémarrage nécessaire. Gladys appelle depuis son pont Docker.
 - Un **nouveau membre non autorisé** déclenche `member_pending` et pas `member_online` (vu en vrai : un nœud qui
-  frappe est « en ligne » par relais). Aucun événement à la première lecture, ni pour un réseau qui apparaît.
+  frappe est « en ligne » par relais). `member_online`/`offline` suivent « en ligne ET autorisé » : autoriser un
+  membre connecté déclenche `member_online`. Aucun événement à la première lecture, ni pour un réseau qui apparaît.
+- **Revue du 18/10/2026** (corrigé, figé par des tests) : corriger des identifiants de réseau invalides relance la
+  lecture (`invalidNetworks` dans la signature) ; `lastHeard` oublié pour un pair retiré de `/peer`, et un pair
+  listé sans chemin plus de 12 min après le dernier chemin direct est relayé, donc en ligne ; heartbeat avancé même
+  après un refus (sinon renvoi complet à chaque lecture) ; « Vu pour la dernière fois » figé tant que le membre est
+  en ligne (`shownSeen`) ; membres d'un réseau plus suivi passés hors ligne, compteurs d'un réseau disparu à 0 ; un
+  404 sur un réseau ou un membre supprimé entre deux requêtes (chemin d'avant 1.12) n'est plus « pas un contrôleur ».
 - « Vu pour la dernière fois », version, IP : `text/text` ; l'IP vaut `Aucune`/`None`… quand il n'y en a pas (un
   texte n'est jamais vide). Pas d'action de scène : l'interrupteur « Autorisé » (désactivé par défaut) en tient lieu.
 - Test réel reproductible : réseau `gladys-test-zerotier`, conteneurs `zerotier/zerotier` avec

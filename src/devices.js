@@ -12,8 +12,8 @@
 //   - authorized: switch/binary, read only unless the configuration allows
 //     authorizing members from Gladys;
 //   - last seen, managed IP address, ZeroTier version: text/text (Gladys has
-//     no timestamp couple; a date changes only when the member is seen again,
-//     where a "minutes ago" would change at every reading).
+//     no timestamp couple). The date changes only when the member comes online
+//     or goes offline, not at each check-in of an online member.
 // Network features: online members, members, pending authorizations
 // (counter-sensor/integer).
 //
@@ -142,7 +142,8 @@ const MEMBER_FEATURES = [
   {
     key: FEATURE_KEYS.LAST_SEEN,
     definition: textFeature,
-    value: ({ member, language }) => formatDate(member.lastSeen, language),
+    // `shownSeen`: frozen while online (src/hub.js).
+    value: ({ member, language }) => formatDate(member.shownSeen ?? member.lastSeen, language),
   },
   {
     key: FEATURE_KEYS.IP,

@@ -83,7 +83,7 @@ controller on your local network, never `127.0.0.1`.
 | ------------------ | -------------------------------------------------------------------------------- |
 | Online             | Yes when the member was seen a few minutes ago at most                           |
 | Authorized         | Whether the member is authorized on the network (a switch, read only by default) |
-| Last seen          | Date and time the member was last seen                                           |
+| Last seen          | When it went offline; while online, when it came online                          |
 | Managed IP address | The addresses the network gives it (`None` when it has none)                     |
 | ZeroTier version   | The version of ZeroTier the member runs                                          |
 
@@ -95,8 +95,9 @@ when it checked in with Central less than 5 minutes ago (members check in
 about every minute). With a self-hosted controller, the controller does not
 store such a date: the integration reads the node's peers, and a member is
 online when the controller heard from it less than 3 minutes ago. A member
-reached through a relay (no direct path) counts as online as long as the
-node lists it.
+reached through a relay (no direct path) counts as online once the node has
+listed it for 2 minutes; one that moves from a direct path to a relay is seen offline
+for about 12 minutes.
 
 **Authorized** only becomes a command when **Allow authorizing members** is
 on: then Gladys, its scenes and voice assistants can let a member in or cut it
@@ -123,7 +124,9 @@ Each trigger can be limited to one member (**Member (empty: any)**) or one
 network (**Network (empty: any)**), and gives the variables **Member name**,
 **Node ID** and **Network name** to the scene's messages. No event is sent at
 the first reading after a start or a change of configuration: the previous
-state is unknown.
+state is unknown. Online and offline only concern authorized members: a
+stranger coming and going fires nothing, and authorizing a connected member
+fires **ZeroTier member online**.
 
 ### Scene ideas
 

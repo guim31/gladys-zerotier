@@ -172,22 +172,51 @@ test('controller: a stopped member goes offline, as seen on 1.14.2', async () =>
   api.peer('c0ffee1234').paths = [];
   clock.advance(60_000);
   assert.deepEqual([(await laptop()).online, (await laptop()).lastSeen], [false, heard]);
-  // About 9 minutes after: the node drops the peer.
+  // About 9 minutes after: the node drops the peer (the hub keeps the date).
   api.forget('c0ffee1234');
   clock.advance(5 * 60_000);
-  assert.deepEqual([(await laptop()).online, (await laptop()).lastSeen], [false, heard]);
+  assert.deepEqual([(await laptop()).online, (await laptop()).lastSeen], [false, null]);
   // Back.
   api.peers.push(structuredClone(FIXTURES.controller.peersDirect.at(-1)));
   api.heard('c0ffee1234');
   assert.equal((await laptop()).online, true);
 });
 
-test('controller: a relayed member (no path ever) is online while listed', async () => {
+test('controller: a member that moved behind a relay is online again once clearly alive', async () => {
+  const { client, clock, api } = controller();
+  const laptop = async () =>
+    (await client.read(clock.now())).networks[0].members.find((m) => m.name === 'Laptop');
+  await laptop();
+  api.peer('c0ffee1234').paths = [];
+  clock.advance(5 * 60_000);
+  assert.equal((await laptop()).online, false, 'like a stopped member, for a while');
+  clock.advance(8 * 60_000);
+  assert.equal((await laptop()).online, true, 'still listed after 13 minutes: relayed');
+});
+
+test('controller: a relayed member (no path ever) is online once listed for 2 minutes', async () => {
   const { client, clock } = controller({ relay: true });
-  const { networks } = await client.read(clock.now());
-  const member = networks[0].members.find((m) => m.name === 'Laptop');
+  const laptop = async () =>
+    (await client.read(clock.now())).networks[0].members.find((m) => m.name === 'Laptop');
+  assert.equal((await laptop()).online, false, 'maybe a stub of the controller');
+  clock.advance(2 * 60_000);
+  const member = await laptop();
   assert.equal(member.online, true);
   assert.equal(member.version, '1.14.2', 'the version of the member record');
+});
+
+test('controller: the stub of a stopped member, listed a few seconds, is not online', async () => {
+  // Seen on 1.14.2: authorizing a stopped member lists it without path briefly.
+  const { client, clock, api } = controller({ relay: true });
+  const laptop = async () =>
+    (await client.read(clock.now())).networks[0].members.find((m) => m.name === 'Laptop');
+  assert.equal((await laptop()).online, false);
+  api.forget('c0ffee1234');
+  clock.advance(30_000);
+  assert.equal((await laptop()).online, false);
+  api.peers.push(structuredClone(FIXTURES.controller.peersRelay.at(-1)));
+  clock.advance(2 * 60_000);
+  assert.equal((await laptop()).online, false, 'listed again: the 2 minutes start over');
 });
 
 test('controller before 1.12: falls back to one request per member, once', async () => {

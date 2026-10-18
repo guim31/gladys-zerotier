@@ -89,7 +89,7 @@ dirección de la máquina del controlador en su red local, nunca `127.0.0.1`.
 | ----------------------- | ------------------------------------------------------------------------------------- |
 | En línea                | Sí cuando el miembro se ha visto hace unos minutos como mucho                         |
 | Autorizado              | Si el miembro está autorizado en la red (un interruptor, de solo lectura por defecto) |
-| Visto por última vez    | La fecha y la hora en que el miembro se vio por última vez                            |
+| Visto por última vez    | Cuándo pasó a fuera de línea; en línea, desde cuándo lo está                          |
 | Dirección IP gestionada | Las direcciones que le da la red (`Ninguna` si no tiene)                              |
 | Versión de ZeroTier     | La versión de ZeroTier del miembro                                                    |
 
@@ -102,7 +102,8 @@ miembros se comunican más o menos cada minuto). Con un controlador
 autoalojado, el controlador no guarda esa fecha: la integración lee los pares
 del nodo, y un miembro está en línea cuando el controlador lo ha oído hace
 menos de 3 minutos. Un miembro alcanzado a través de un relé (sin ruta
-directa) cuenta como en línea mientras el nodo lo liste.
+directa) cuenta como en línea cuando el nodo lo lista desde hace 2 minutos; uno que pasa de una
+ruta directa a un relé se ve fuera de línea unos 12 minutos.
 
 **Autorizado** solo se convierte en un comando cuando **Permitir autorizar
 miembros** está activado: entonces Gladys, sus escenas y los asistentes de voz
@@ -129,7 +130,9 @@ Cada disparador puede limitarse a un miembro (**Miembro (vacío: cualquiera)**)
 o a una red (**Red (vacío: cualquiera)**), y da las variables **Nombre del
 miembro**, **ID del nodo** y **Nombre de la red** a los mensajes de la escena.
 No se envía ningún evento en la primera lectura tras un arranque o un cambio de
-configuración: el estado anterior es desconocido.
+configuración: el estado anterior es desconocido. En línea y fuera de línea solo afectan a los miembros autorizados: un
+desconocido que va y viene no dispara nada, y autorizar a un miembro conectado
+dispara **Miembro ZeroTier en línea**.
 
 ### Ideas de escenas
 
