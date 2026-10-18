@@ -1,0 +1,29 @@
+[
+  {
+    "id": "8056c2e21c000001",
+    "clock": 1792307400000,
+    "config": {
+      "creationTime": 1599853509872,
+      "enableBroadcast": true,
+      "id": "8056c2e21c000001",
+      "ipAssignmentPools": [{ "ipRangeStart": "192.0.2.1", "ipRangeEnd": "192.0.2.254" }],
+      "lastModified": 1612993759070,
+      "mtu": 2800,
+      "multicastLimit": 32,
+      "name": "home",
+      "private": true,
+      "routes": [{ "target": "192.0.2.0/24", "via": null }],
+      "v4AssignMode": { "zt": true },
+      "v6AssignMode": { "6plane": false, "rfc4193": false, "zt": false }
+    },
+    "description": "",
+    "rulesSource": "accept;",
+    "permissions": {},
+    "ownerId": "00000000-0000-0000-0000-000000000000",
+    "onlineMemberCount": 0,
+    "authorizedMemberCount": 3,
+    "totalMemberCount": 5,
+    "capabilitiesByName": {},
+    "tagsByName": {}
+  }
+]

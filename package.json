@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-zerotier",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration for ZeroTier: who is online on your networks, from Central or a self-hosted controller.",
   "type": "module",
   "main": "index.js",
   "scripts": {

@@ -1,0 +1,110 @@
+[
+  {
+    "address": "778cde7190",
+    "isBonded": false,
+    "latency": 124,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.1/9993",
+        "expired": false,
+        "lastReceive": 1792307216401,
+        "lastSend": 0,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafe04eba9",
+    "isBonded": false,
+    "latency": 31,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.4/9993",
+        "expired": false,
+        "lastReceive": 1792307257591,
+        "lastSend": 1792307261280,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafe80ed74",
+    "isBonded": false,
+    "latency": 159,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.2/9993",
+        "expired": false,
+        "lastReceive": 1792307216436,
+        "lastSend": 0,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafefd6717",
+    "isBonded": false,
+    "latency": 236,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.3/9993",
+        "expired": false,
+        "lastReceive": 1792307216513,
+        "lastSend": 0,
+        "localPort": 0,
+        "localSocket": 96502726143216,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "c0ffee1234",
+    "isBonded": false,
+    "latency": -1,
+    "paths": [],
+    "role": "LEAF",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  }
+]

@@ -1,0 +1,144 @@
+[
+  {
+    "address": "778cde7190",
+    "isBonded": false,
+    "latency": 124,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.1/9993",
+        "expired": false,
+        "lastReceive": 1792307216401,
+        "lastSend": 1792307316283,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafe04eba9",
+    "isBonded": false,
+    "latency": 31,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.5/9993",
+        "expired": false,
+        "lastReceive": 1792307323511,
+        "lastSend": 1792307331283,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafe80ed74",
+    "isBonded": false,
+    "latency": 159,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.2/9993",
+        "expired": false,
+        "lastReceive": 1792307216436,
+        "lastSend": 1792307316283,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "cafefd6717",
+    "isBonded": false,
+    "latency": 236,
+    "paths": [
+      {
+        "active": true,
+        "address": "203.0.113.4/9993",
+        "expired": false,
+        "lastReceive": 1792307216513,
+        "lastSend": 1792307316283,
+        "localPort": 0,
+        "localSocket": 96502726143216,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "PLANET",
+    "tunneled": false,
+    "version": "-1.-1.-1",
+    "versionMajor": -1,
+    "versionMinor": -1,
+    "versionRev": -1
+  },
+  {
+    "address": "c0ffee1234",
+    "isBonded": false,
+    "latency": 0,
+    "paths": [
+      {
+        "active": true,
+        "address": "192.0.2.23/9993",
+        "expired": false,
+        "lastReceive": 1792307323449,
+        "lastSend": 1792307323448,
+        "localPort": 0,
+        "localSocket": 96502726145056,
+        "preferred": false,
+        "trustedPathId": 0
+      },
+      {
+        "active": true,
+        "address": "192.0.2.23/9993",
+        "expired": false,
+        "lastReceive": 1792307323449,
+        "lastSend": 1792307323449,
+        "localPort": 0,
+        "localSocket": 96502726143216,
+        "preferred": false,
+        "trustedPathId": 0
+      },
+      {
+        "active": true,
+        "address": "192.0.2.23/9993",
+        "expired": false,
+        "lastReceive": 1792307323449,
+        "lastSend": 1792307328729,
+        "localPort": 0,
+        "localSocket": 96502726150368,
+        "preferred": true,
+        "trustedPathId": 0
+      }
+    ],
+    "role": "LEAF",
+    "tunneled": false,
+    "version": "1.14.2",
+    "versionMajor": 1,
+    "versionMinor": 14,
+    "versionRev": 2
+  }
+]

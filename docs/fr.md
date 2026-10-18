@@ -1,67 +1,176 @@
-# Template de démonstration
+# ZeroTier
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez les membres de vos réseaux [ZeroTier](https://www.zerotier.com) dans
+Gladys : un appareil par membre (en ligne ou non, autorisé ou non, vu pour la
+dernière fois, adresse IP gérée, version de ZeroTier), un appareil par réseau,
+un widget de tableau de bord, et des déclencheurs de scène quand un membre
+passe en ligne, hors ligne, ou demande à entrer — par exemple pour savoir
+qu'un téléphone est de retour sur le réseau familial, ou qu'un appareil inconnu
+frappe à la porte d'un réseau privé.
 
-## Ce que vous obtenez
+Elle fonctionne avec **ZeroTier Central** (my.zerotier.com, le cloud) ou avec
+un **contrôleur auto-hébergé** (votre propre nœud ZeroTier qui gère ses
+réseaux). Le mode auto-hébergé a été testé contre un vrai contrôleur et un vrai
+membre ZeroTier 1.14.2 en Docker. Le mode Central a été développé d'après la
+documentation officielle de l'API, **sans vrai compte Central : vos retours
+sont les bienvenus** sur le [forum Gladys](https://community.gladysassistant.com)
+ou dans les [issues](https://github.com/guim31/gladys-zerotier/issues).
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Ce qu'il vous faut
+
+- Gladys Assistant 5.1.0 ou plus récent.
+- **ZeroTier Central** : un jeton d'API du compte qui possède les réseaux
+  (my.zerotier.com → Account → API Access Tokens), et un accès à Internet pour
+  Gladys.
+- **Contrôleur auto-hébergé** : le nœud ZeroTier qui fait tourner le
+  contrôleur, joignable depuis Gladys sur son port 9993, le contenu de son
+  fichier `authtoken.secret`, et l'adresse de Gladys autorisée dans son
+  `local.conf` (voir plus bas).
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. Dans Gladys, installez l'intégration, puis ouvrez son écran
+   **Configuration**.
+2. **Contrôleur** : _ZeroTier Central (cloud)_ ou _Contrôleur auto-hébergé
+   (local)_.
+3. **Jeton d'API** : le jeton de Central, ou le contenu de `authtoken.secret`.
+4. **Réseaux à suivre** : les identifiants de réseau (16 caractères, tels que
+   les affiche Central ou `zerotier-cli listnetworks`), séparés par des
+   virgules. Vide : tous les réseaux que le jeton voit.
+5. **Intervalle de rafraîchissement** : 1 minute par défaut. Chaque lecture
+   coûte une requête, plus une par réseau.
+6. **Autoriser l'autorisation des membres** : désactivé par défaut (voir les
+   appareils plus bas).
+7. **Langue des noms** : la langue des noms de fonctionnalités et des dates,
+   le français par défaut.
+8. Enregistrez, puis appuyez sur **Tester la connexion** : chaque réseau
+   s'affiche avec ses membres. Les appareils apparaissent ensuite dans l'onglet
+   **Découverte** de l'intégration : ajoutez ceux que vous voulez.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+### ZeroTier Central
 
-## Actions
+Créez un jeton dans my.zerotier.com → **Account** → **API Access Tokens**. Il
+donne accès à tous les réseaux du compte : gardez-le pour vous. Central limite
+le nombre de requêtes d'API par compte : gardez l'intervalle par défaut si
+d'autres outils utilisent le même jeton.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+### Contrôleur auto-hébergé
 
-## Scènes
+Par défaut, l'API locale de ZeroTier ne répond qu'au nœud lui-même. Autorisez
+l'adresse depuis laquelle Gladys appelle dans le fichier `local.conf` du
+dossier ZeroTier du contrôleur (`/var/lib/zerotier-one` sous Linux), puis
+redémarrez ZeroTier :
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+```json
+{ "settings": { "allowManagementFrom": ["192.168.1.0/24"] } }
+```
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Gladys appelle depuis sa machine (l'intégration tourne dans un conteneur
+Docker sur le pont par défaut) : autorisez l'adresse de la machine de Gladys,
+ou, si le contrôleur tourne sur la même machine, la plage de Docker
+(`172.16.0.0/12`). Comme **Adresse du contrôleur (auto-hébergé)**, donnez
+l'adresse de la machine du contrôleur sur votre réseau local, jamais
+`127.0.0.1`.
+
+## Les appareils
+
+**Chaque réseau** (`ZeroTier` suivi de son nom) :
+
+| Fonctionnalité            | Ce qu'elle indique                                       |
+| ------------------------- | -------------------------------------------------------- |
+| Membres en ligne          | Les membres en ligne en ce moment                        |
+| Membres                   | Les membres du réseau                                    |
+| En attente d'autorisation | Les membres qui ont demandé à entrer et attendent encore |
+
+**Chaque membre** (son nom, ou son identifiant de nœud s'il n'en a pas, suivi
+de `(ZeroTier)`) :
+
+| Fonctionnalité           | Ce qu'elle indique                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| En ligne                 | Oui quand le membre a été vu il y a quelques minutes au plus                           |
+| Autorisé                 | Si le membre est autorisé sur le réseau (un interrupteur, en lecture seule par défaut) |
+| Vu pour la dernière fois | Quand il est passé hors ligne ; en ligne, depuis quand il l'est                        |
+| Adresse IP gérée         | Les adresses que le réseau lui donne (`Aucune` s'il n'en a pas)                        |
+| Version de ZeroTier      | La version de ZeroTier du membre                                                       |
+
+Une même machine dans deux réseaux fait deux appareils : son autorisation est
+propre à chaque réseau.
+
+**En ligne** se lit différemment selon le mode. Avec Central, un membre est en
+ligne quand il s'est signalé à Central il y a moins de 5 minutes (les membres
+se signalent environ chaque minute). Avec un contrôleur auto-hébergé, le
+contrôleur ne garde pas cette date : l'intégration lit les pairs du nœud, et
+un membre est en ligne quand le contrôleur l'a entendu il y a moins de 3
+minutes. Un membre joint par un relais (sans chemin direct) compte comme en
+ligne une fois listé par le nœud depuis 2 minutes ; un membre qui passe d'un chemin direct à un
+relais est vu hors ligne une douzaine de minutes.
+
+**Autorisé** ne devient une commande que si **Autoriser l'autorisation des
+membres** est activé : Gladys, ses scènes et les assistants vocaux peuvent
+alors faire entrer un membre ou le couper. Activer ou désactiver l'option
+change l'appareil : appuyez sur **Mettre à jour** dans l'onglet Découverte.
 
 ## Tableau de bord
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Le widget **Membres ZeroTier** affiche les membres en ligne et les membres des
+réseaux, puis une ligne par membre : ceux qui attendent une autorisation
+d'abord, puis ceux en ligne, puis les autres avec le moment où ils ont été vus.
+Son réglage **Réseau (vide : tous)** n'affiche qu'un seul réseau.
+
+## Scènes
+
+### Déclencheurs
+
+- **Membre ZeroTier en ligne** : un membre est passé en ligne.
+- **Membre ZeroTier hors ligne** : un membre n'a plus été vu depuis quelques
+  minutes.
+- **Nouveau membre en attente d'autorisation** : un nouvel appareil a demandé à
+  rejoindre un réseau privé.
+
+Chaque déclencheur peut se limiter à un membre (**Membre (vide : n'importe
+lequel)**) ou à un réseau (**Réseau (vide : n'importe lequel)**), et donne les
+variables **Nom du membre**, **Identifiant du nœud** et **Nom du réseau** aux
+messages de la scène. Aucun événement n'est envoyé à la première lecture après
+un démarrage ou un changement de configuration : l'état précédent est inconnu. En ligne et hors ligne ne concernent que les membres autorisés : un inconnu
+qui va et vient ne déclenche rien, et autoriser un membre connecté déclenche
+**Membre ZeroTier en ligne**.
+
+### Idées de scènes
+
+- Quand un nouveau membre attend une autorisation, envoyez-vous un message
+  avec son **Identifiant du nœud** et le **Nom du réseau**, puis autorisez-le
+  dans Central ou depuis son appareil dans Gladys.
+- Quand l'ordinateur d'un ado passe en ligne après 23 h, envoyez une
+  notification.
+- Quand le NAS distant qui garde vos sauvegardes passe hors ligne, envoyez un
+  message.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« jeton d'API refusé »** : vérifiez le jeton. Pour un contrôleur
+  auto-hébergé, c'est tout le contenu de `authtoken.secret`, sans retour à la
+  ligne.
+- **« ZeroTier ne répond pas »** : avec Central, vérifiez l'accès à Internet de
+  Gladys. Avec un contrôleur auto-hébergé, vérifiez l'adresse et le port
+  (9993), et que `allowManagementFrom` autorise Gladys (voir plus haut).
+- **« réseau introuvable »** : l'identifiant du réseau est faux, ou le jeton ne
+  voit pas ce réseau.
+- **« ce nœud ZeroTier n'est pas un contrôleur de réseau »** : l'adresse est
+  celle d'un nœud ZeroTier ordinaire, pas du contrôleur de vos réseaux.
+- **« trop de requêtes vers ZeroTier Central »** : l'intégration attend déjà
+  plus longtemps entre deux lectures ; choisissez un intervalle plus long.
+- **Un membre reste en ligne après avoir été éteint** : il faut jusqu'à 5
+  minutes, plus une lecture, et jusqu'à 9 minutes environ pour un membre relayé
+  d'un contrôleur auto-hébergé.
+
+## Limites
+
+- Un contrôleur (ou un compte Central) par installation de l'intégration.
+- L'intégration ne crée pas de réseau, ne renomme ni ne supprime de membre :
+  cela reste dans Central ou sur votre contrôleur.
+- La date « vu pour la dernière fois » d'un contrôleur auto-hébergé est gardée
+  en mémoire : elle redevient inconnue après un redémarrage de l'intégration,
+  jusqu'à ce que le membre soit revu.
+- Les membres supprimés dans Central (masqués par Central) ne sont pas
+  affichés.
+- Sans lien avec ZeroTier, Inc. ZeroTier est une marque de ZeroTier, Inc.
