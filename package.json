@@ -1,6 +1,6 @@
 {
   "name": "gladys-zerotier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for ZeroTier: who is online on your networks, from Central or a self-hosted controller.",
   "type": "module",
